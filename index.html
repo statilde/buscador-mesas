@@ -111,11 +111,14 @@
       }
 
       if (
-        !SUPABASE_URL ||
-        !SUPABASE_KEY ||
-        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/") ||
-        SUPABASE_KEY.includes("sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT")
-      ) {
+  typeof SUPABASE_URL !== "string" ||
+  typeof SUPABASE_KEY !== "string" ||
+  SUPABASE_URL.trim() === "" ||
+  SUPABASE_KEY.trim() === ""
+) {
+  resultado.textContent = "Las credenciales están vacías o no se están leyendo.";
+  return;
+}
         resultado.textContent = "Faltan las credenciales de conexión.";
         return;
       }

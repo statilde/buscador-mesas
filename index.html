@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Encuentra tu mesa</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -28,7 +31,9 @@
       box-shadow: 0 8px 30px #00000012;
     }
 
-    h1 { margin-top: 0; }
+    h1 {
+      margin-top: 0;
+    }
 
     input, button {
       width: 100%;
@@ -49,27 +54,50 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     #resultado {
       margin-top: 22px;
       line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    ul {
+      text-align: left;
     }
   </style>
 </head>
+
 <body>
   <main class="card">
     <h1>Encuentra tu mesa</h1>
+
     <p>Ingresa tu nombre y tu código de invitación.</p>
 
-    <input id="nombre" placeholder="Tu nombre" autocomplete="name">
-    <input id="codigo" placeholder="Tu código" autocomplete="off">
+    <input
+      id="nombre"
+      placeholder="Tu nombre"
+      autocomplete="name"
+    >
+
+    <input
+      id="codigo"
+      placeholder="Tu código"
+      autocomplete="off"
+    >
+
     <button id="buscar">Buscar mi mesa</button>
 
     <div id="resultado" aria-live="polite"></div>
   </main>
 
   <script>
-    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/";
-    const SUPABASE_KEY = "sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT";
+    // PEGA TUS DATOS DE SUPABASE AQUÍ
+    const SUPABASE_URL = "PEGA_AQUI_TU_PROJECT_URL";
+    const SUPABASE_KEY = "PEGA_AQUI_TU_PUBLISHABLE_KEY";
 
     const boton = document.getElementById("buscar");
     const resultado = document.getElementById("resultado");
@@ -83,18 +111,27 @@
         return;
       }
 
+      if (
+        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/") ||
+        SUPABASE_KEY.includes("sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT")
+      ) {
+        resultado.textContent = "Faltan las credenciales de conexión.";
+        return;
+      }
+
       boton.disabled = true;
-      resultado.textContent = "Buscando...";
+      resultado.textContent = "Buscando tu mesa...";
 
       try {
         const respuesta = await fetch(
-          `${SUPABASE_URL}/rest/v1/rpc/buscar_invitado`,
+          `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/buscar_invitado`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Accept": "application/json"
             },
             body: JSON.stringify({
               p_nombre: nombre,
@@ -104,49 +141,67 @@
         );
 
         const texto = await respuesta.text();
-let datos;
 
-try {
-  datos = JSON.parse(texto);
-} catch {
-  datos = { message: texto };
-}
+        let datos;
 
-if (!respuesta.ok) {
-  resultado.textContent =
-    `Error ${respuesta.status}: ${datos.message || datos.msg || texto}`;
-  return;
-}
+        try {
+          datos = JSON.parse(texto);
+        } catch {
+          datos = { message: texto };
+        }
+
+        if (!respuesta.ok) {
+          const detalle =
+            datos.message ||
+            datos.msg ||
+            datos.hint ||
+            texto ||
+            "Error desconocido";
+
+          resultado.textContent =
+            `Error ${respuesta.status}: ${detalle}`;
+
+          return;
+        }
 
         if (!datos.ok) {
-          resultado.textContent = datos.mensaje;
+          resultado.textContent =
+            datos.mensaje || "No encontramos tus datos.";
           return;
         }
 
         const titulo = document.createElement("h2");
         titulo.textContent = `¡Tu mesa es la ${datos.mesa}!`;
+
         resultado.replaceChildren(titulo);
 
         const subtitulo = document.createElement("p");
         subtitulo.textContent = "Compartirás mesa con:";
         resultado.appendChild(subtitulo);
 
-        if (datos.acompanantes.length === 0) {
+        if (
+          !Array.isArray(datos.acompanantes) ||
+          datos.acompanantes.length === 0
+        ) {
           const solo = document.createElement("p");
-          solo.textContent = "Por ahora no tienes acompañantes asignados.";
+          solo.textContent =
+            "Por ahora no tienes acompañantes asignados.";
           resultado.appendChild(solo);
         } else {
           const lista = document.createElement("ul");
+
           datos.acompanantes.forEach(persona => {
             const elemento = document.createElement("li");
             elemento.textContent = persona;
             lista.appendChild(elemento);
           });
+
           resultado.appendChild(lista);
         }
 
       } catch (error) {
-        resultado.textContent = error.message;
+        resultado.textContent =
+          `Error de conexión: ${error.message}`;
       } finally {
         boton.disabled = false;
       }

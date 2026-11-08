@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encuentra tu mesa</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f8f0ed;
+      color: #493b3a;
+      font-family: Georgia, serif;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 24px;
+      background: white;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 8px 30px #00000012;
+    }
+
+    h1 { margin-top: 0; }
+
+    input, button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 12px;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+
+    input {
+      border: 1px solid #d8c7c2;
+    }
+
+    button {
+      border: 0;
+      background: #805c62;
+      color: white;
+      cursor: pointer;
+    }
+
+    #resultado {
+      margin-top: 22px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Encuentra tu mesa</h1>
+    <p>Ingresa tu nombre y tu código de invitación.</p>
+
+    <input id="nombre" placeholder="Tu nombre" autocomplete="name">
+    <input id="codigo" placeholder="Tu código" autocomplete="off">
+    <button id="buscar">Buscar mi mesa</button>
+
+    <div id="resultado" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/";
+    const SUPABASE_KEY = "sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT";
+
+    const boton = document.getElementById("buscar");
+    const resultado = document.getElementById("resultado");
+
+    boton.addEventListener("click", async () => {
+      const nombre = document.getElementById("nombre").value.trim();
+      const codigo = document.getElementById("codigo").value.trim();
+
+      if (!nombre || !codigo) {
+        resultado.textContent = "Completa tu nombre y tu código.";
+        return;
+      }
+
+      boton.disabled = true;
+      resultado.textContent = "Buscando...";
+
+      try {
+        const respuesta = await fetch(
+          `${SUPABASE_URL}/rest/v1/rpc/buscar_invitado`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+              p_nombre: nombre,
+              p_codigo: codigo
+            })
+          }
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudo realizar la búsqueda. Inténtalo más tarde.");
+        }
+
+        if (!datos.ok) {
+          resultado.textContent = datos.mensaje;
+          return;
+        }
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = `¡Tu mesa es la ${datos.mesa}!`;
+        resultado.replaceChildren(titulo);
+
+        const subtitulo = document.createElement("p");
+        subtitulo.textContent = "Compartirás mesa con:";
+        resultado.appendChild(subtitulo);
+
+        if (datos.acompanantes.length === 0) {
+          const solo = document.createElement("p");
+          solo.textContent = "Por ahora no tienes acompañantes asignados.";
+          resultado.appendChild(solo);
+        } else {
+          const lista = document.createElement("ul");
+          datos.acompanantes.forEach(persona => {
+            const elemento = document.createElement("li");
+            elemento.textContent = persona;
+            lista.appendChild(elemento);
+          });
+          resultado.appendChild(lista);
+        }
+
+      } catch (error) {
+        resultado.textContent = error.message;
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

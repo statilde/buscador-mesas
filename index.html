@@ -96,7 +96,7 @@
 
   <script>
     // PEGA TUS DATOS DE SUPABASE AQUÍ
-    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/";
+    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co";
     const SUPABASE_KEY = "sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT";
 
     const boton = document.getElementById("buscar");
@@ -112,7 +112,7 @@
       }
 
       if (
-        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/") ||
+        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co") ||
         SUPABASE_KEY.includes("sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT")
       ) {
         resultado.textContent = "Faltan las credenciales de conexión.";

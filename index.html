@@ -31,10 +31,6 @@
       box-shadow: 0 8px 30px #00000012;
     }
 
-    h1 {
-      margin-top: 0;
-    }
-
     input, button {
       width: 100%;
       padding: 13px;
@@ -56,7 +52,6 @@
 
     button:disabled {
       opacity: 0.6;
-      cursor: wait;
     }
 
     #resultado {
@@ -74,17 +69,18 @@
 <body>
   <main class="card">
     <h1>Encuentra tu mesa</h1>
-
     <p>Ingresa tu nombre y tu código de invitación.</p>
 
     <input
       id="nombre"
+      type="text"
       placeholder="Tu nombre"
       autocomplete="name"
     >
 
     <input
       id="codigo"
+      type="text"
       placeholder="Tu código"
       autocomplete="off"
     >
@@ -95,8 +91,9 @@
   </main>
 
   <script>
-    // PEGA TUS DATOS DE SUPABASE AQUÍ
-    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co";
+    // PEGA AQUÍ TUS DATOS DE SUPABASE
+
+    const SUPABASE_URL = "https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/";
     const SUPABASE_KEY = "sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT";
 
     const boton = document.getElementById("buscar");
@@ -106,13 +103,17 @@
       const nombre = document.getElementById("nombre").value.trim();
       const codigo = document.getElementById("codigo").value.trim();
 
+      resultado.replaceChildren();
+
       if (!nombre || !codigo) {
         resultado.textContent = "Completa tu nombre y tu código.";
         return;
       }
 
       if (
-        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co") ||
+        !SUPABASE_URL ||
+        !SUPABASE_KEY ||
+        SUPABASE_URL.includes("https://nzvnzvhdfqujzfuslszw.supabase.co/rest/v1/") ||
         SUPABASE_KEY.includes("sb_publishable_bhtvv-Qr_Pbd4wxSErcSxA_CY3YEuQT")
       ) {
         resultado.textContent = "Faltan las credenciales de conexión.";
@@ -123,15 +124,16 @@
       resultado.textContent = "Buscando tu mesa...";
 
       try {
+        const url = SUPABASE_URL.replace(/\/+$/, "");
+
         const respuesta = await fetch(
-          `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/buscar_invitado`,
+          `${url}/rest/v1/rpc/buscar_invitado`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`,
-              "Accept": "application/json"
+              "Authorization": `Bearer ${SUPABASE_KEY}`
             },
             body: JSON.stringify({
               p_nombre: nombre,
@@ -151,16 +153,10 @@
         }
 
         if (!respuesta.ok) {
-          const detalle =
-            datos.message ||
-            datos.msg ||
-            datos.hint ||
-            texto ||
-            "Error desconocido";
-
           resultado.textContent =
-            `Error ${respuesta.status}: ${detalle}`;
-
+            `Error ${respuesta.status}: ${
+              datos.message || datos.msg || texto || "Error desconocido"
+            }`;
           return;
         }
 
@@ -177,31 +173,29 @@
 
         const subtitulo = document.createElement("p");
         subtitulo.textContent = "Compartirás mesa con:";
+
         resultado.appendChild(subtitulo);
 
-        if (
-          !Array.isArray(datos.acompanantes) ||
-          datos.acompanantes.length === 0
-        ) {
-          const solo = document.createElement("p");
-          solo.textContent =
-            "Por ahora no tienes acompañantes asignados.";
-          resultado.appendChild(solo);
+        const lista = document.createElement("ul");
+
+        (datos.acompanantes || []).forEach(persona => {
+          const elemento = document.createElement("li");
+          elemento.textContent = persona;
+          lista.appendChild(elemento);
+        });
+
+        if (!datos.acompanantes || datos.acompanantes.length === 0) {
+          const mensaje = document.createElement("p");
+          mensaje.textContent = "No tienes acompañantes registrados en tu mesa.";
+          resultado.appendChild(mensaje);
         } else {
-          const lista = document.createElement("ul");
-
-          datos.acompanantes.forEach(persona => {
-            const elemento = document.createElement("li");
-            elemento.textContent = persona;
-            lista.appendChild(elemento);
-          });
-
           resultado.appendChild(lista);
         }
 
       } catch (error) {
         resultado.textContent =
           `Error de conexión: ${error.message}`;
+
       } finally {
         boton.disabled = false;
       }
